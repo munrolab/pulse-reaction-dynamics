@@ -15,7 +15,7 @@ mlist = [1.4 1.7 2];
 % compare rhotimes
 figure
 ind=1;
-for n = nlist+1
+for n = nlist
     for m = mlist
         ind
         subplot(length(nlist),length(mlist),ind)
