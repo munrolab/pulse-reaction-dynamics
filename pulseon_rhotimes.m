@@ -12,9 +12,8 @@ spt = 20;
 figure
 
 
-
-n=1.25;
-m=1.5;
+n=2.4;
+m=1.4;
 
 % 1D fit for dp rising
 dpf_1 = @(b,x)(b(1)*x(:,1).^n./(b(2)^n+x(:,1).^n));
@@ -28,18 +27,18 @@ xlabel('[Rho]')
 ylabel('d[Rho]/dt')
 
 % 1D fit for dp falling
-dpf_2 = @(b,x)(b(1)-b(2).*x(:,2));
+dpf_2 = @(b,x)(b(1)-b(2).*x(:,1).*x(:,2));
 beta = nlinfit([p_data(spt:stp),r_data(spt:stp)],dp_data(spt:stp),dpf_2,[0.1,0.1]);
 koff = beta(2);
 subplot(2,2,2)
-plot(r_data(spt:stp),dp_data(spt:stp),'.')
+plot(p_data(spt:stp).*r_data(spt:stp),dp_data(spt:stp),'.')
 hold on
-plot(r_data(1:stp),dpf_2(beta,[p_data(1:stp),r_data(1:stp)]))
-xlabel('[RGA]')
+plot(p_data(spt:stp).*r_data(spt:stp),dpf_2(beta,[p_data(spt:stp),r_data(spt:stp)]))
+xlabel('[Rho]\cdot[RGA]')
 ylabel('d[Rho]/dt')
 
 % 2D fit for dp
-dpf = @(b,x)(b(1)*(x(:,1).^n)./(b(2)^n+x(:,1).^n)-b(3).*x(:,2));
+dpf = @(b,x)(b(1)*(x(:,1).^n)./(b(2)^n+x(:,1).^n)-b(3).*x(:,1).*x(:,2));
 beta = nlinfit([p_data(1:stp),r_data(1:stp)],dp_data(1:stp),dpf,[0.1,0.1,0.1]);
 kqq = beta(1); p0 = beta(2); koff = beta(3);
 subplot(2,2,3)
@@ -73,17 +72,17 @@ zlabel('d[RGA]/dt')
 
 % set free parameters
 alph = kqq/p0/kt;
-bet = ks*koff/kt^2*p0^(m-1);
+bet = ks*koff/kt^2*p0^m;
 
 % determine rescalings
 p_sc = p0;
-r_sc = p0*kt/koff;
+r_sc = kt/koff;
 t_sc = 1/kt;
 
 
 xq = linspace(0,2/p_sc,100);
 xs = linspace(0,2/r_sc,100);
-s_q = alph*(xq.^n)./(1+xq.^n);
+s_q = alph*(xq.^(n-1))./(1+xq.^n);
 s_s = bet*xq.^m;
 
 figure;
@@ -91,12 +90,12 @@ plot(xq*p_sc,s_q*r_sc,'g');
 hold on
 plot(xq*p_sc,s_s*r_sc,'r');
 [gq, gs] = meshgrid(linspace(-1,2/p_sc,20),linspace(-1,2/r_sc,20));
-dq = alph*gq.^n./(1+gq.^n) - gs;
+dq = alph*gq.^n./(1+gq.^n) - gq.*gs;
 ds = (bet*gq.^m - gs);
 % 
 quiver(gq*p_sc,gs*r_sc,dq*p_sc,ds*r_sc);
 t = 0:0.01:100;
-[~, sol] = ode45(@pulseon_simple_fun, t,[0.0,0.0],odeset('MaxStep',0.1),alph,bet,n,m);
+[~, sol] = ode45(@pulseon_rhotimes_fun, t,[0.0,0.0],odeset('MaxStep',0.1),alph,bet,n,m);
 plot(sol(:,1)*p_sc,sol(:,2)*r_sc,'k');
 
 xlim([-1*p_sc,2]);
